@@ -1,8 +1,8 @@
 Pod::Spec.new do |s|
-  s.name             = 'SendbirdAIAgentMessenger'
-  s.version          = '5.0.4'
-  s.summary          = 'Sendbird AI Agent Messenger - Security Audit Distribution'
-  s.description      = 'Official-ish distribution for Sendbird AI Agent Messenger. This version is part of an authorized security research for dependency confusion.'
+  s.name             = 'SendbirdAIAgentCore'
+  s.version          = '5.0.4' 
+  s.summary          = 'Sendbird AI Agent Core Library - Security Research'
+  s.description      = 'Authorized security audit for Sendbird AI ecosystem.'
   s.homepage         = 'https://github.com/ilhamal7/sendbird-ios-distribution'
   s.license          = { :type => 'Commercial', :text => 'Copyright Sendbird' }
   s.author           = { 'zerotohero (Security Research)' => 'zerotohero@bugcrowdninja.com' }
@@ -18,6 +18,4 @@ Pod::Spec.new do |s|
   s.source_files = '**/*.{swift}'
 
   s.dependency 'SendbirdChatSDK', '>= 4.38.1'
-
-  s.frameworks       = 'Foundation', 'SwiftUI', 'Combine'
 end
