@@ -1,6 +1,6 @@
 Pod::Spec.new do |s|
   s.name             = 'SendbirdAIAgentCore'
-  s.version          = '5.0.4' 
+  s.version          = '5.0.5' 
   s.summary          = 'Sendbird AI Agent Core Library - Security Research'
   s.description      = 'Authorized security audit for Sendbird AI ecosystem.'
   s.homepage         = 'https://github.com/ilhamal7/sendbird-ios-distribution'
@@ -9,13 +9,13 @@ Pod::Spec.new do |s|
 
   s.source           = { 
     :git => 'https://github.com/ilhamal7/sendbird-ios-distribution.git', 
-    :tag => '5.0.4' 
+    :tag => '5.0.5' 
   }
 
   s.ios.deployment_target = '14.0'
   s.swift_version    = '5.7'
 
-  s.source_files = '**/*.{swift}'
+  s.source_files     = 'Sources/**/*.{h,m}'
 
   s.dependency 'SendbirdChatSDK', '>= 4.38.1'
 end
